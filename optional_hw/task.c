@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct Course {
     char code[6];
@@ -15,7 +16,7 @@ struct Student {
     char name[15];
     char surname[15];
     char department[15];
-    char class[5];
+    char class[6];
     char faculty[15];
     float gpa;
     int year;
@@ -41,7 +42,7 @@ void displayRecvCourse(FILE* filePtr, char* code, char* term, int year);
 
 void registration(FILE* filePtr); // Use insertStudent and insertCourse functions
 
-studentPtr* readFromFile(FILE* filePtr, studentPtr *cr);
+studentPtr readFromFile(FILE* filePtr);
 
 int menu();
 
@@ -50,7 +51,7 @@ int menu();
 int main()
 {
 	FILE* filePtr;
-	filePtr = fopen("student_info.txt","w+");
+	filePtr = fopen("student_info.txt","ab+");
 	fclose(filePtr);
 	coursePtr *cr = NULL;
 	int choice,id,year;
@@ -104,7 +105,12 @@ int menu()
 void registration(FILE* filePtr)
 {
 	int choice,id;
-	studentPtr cr = NULL;
+	studentPtr cr;
+	cr = readFromFile(filePtr);
+	while(cr != NULL) {
+		printf("%d", cr->id);
+		cr = cr->studentPtr;
+	}
 	puts("1 - Student Registration");
 	puts("2 - Student deletion");
 	scanf("%d",&choice);
@@ -122,109 +128,138 @@ void registration(FILE* filePtr)
 	}
 }
 
-studentPtr* readFromFile(FILE* filePtr, studentPtr *cr)
+studentPtr readFromFile(FILE* filePtr)
 {
-	studentPtr current = *cr;
-	studentPtr previous = NULL;
-	studentPtr new = malloc(sizeof(studentPtr));
-	filePtr = fopen("student_info.txt", "r+");
+	studentPtr head = NULL;
+	studentPtr last = NULL;
+	studentPtr temp = malloc(sizeof(student));
+	filePtr = fopen("student_info.txt", "r");
 	if (filePtr == NULL)
     {
         fprintf(stderr, "\nCouldn't Open File'\n");
         exit (1);
     }
 	printf("%s %d\n",__func__,__LINE__);
-    while(fread(new, sizeof(student), 1, filePtr))
+    while(fread(temp, sizeof(student), 1, filePtr))
     {
-		while( current != NULL && new->id > current->id ) {
-			previous = current;
-			current = current->studentPtr;
-		}
-		if( previous == NULL ) {
-			new->studentPtr = *cr;
-			*cr = new;
-		}
-		else {
-			previous->studentPtr = new;
-			new->studentPtr = current;
-		}
+	    if(head == NULL) {
+		    head = last = malloc(sizeof(student));
+	    }
+	    else {
+		    last->studentPtr = malloc(sizeof(student));
+		    last->coursePtr = malloc(sizeof(course));
+		    last = last->studentPtr;
+	    }
+	    last->id = temp->id;
+	    strcpy(last->name, temp->name);
+	    strcpy(last->surname, temp->surname);
+	    strcpy(last->department, temp->department);
+	    strcpy(last->faculty, temp->faculty);
+	    strcpy(last->class, temp->class);
+	    last->gpa = temp->gpa;
+	    last->year = temp->year;
+	    last->studentPtr = NULL;
+	    last->coursePtr = NULL;
     }
+
     fclose(filePtr);
-	return cr;
+    return head;
 }
 
 void insertStudent(FILE* filePtr, studentPtr* cr, int id)
 {
-	cr = readFromFile(filePtr, cr);
+	studentPtr new;
 	studentPtr current = *cr;
-	studentPtr start;
 	studentPtr previous = NULL;
-	studentPtr new = malloc(sizeof(studentPtr));
-	printf("%s %d\n",__func__,__LINE__);
+	studentPtr temp;
 
-	if(new != NULL) {
+	new = malloc(sizeof(student));
+	if(new != NULL){
+		printf("%d\n",id);
 		new->id = id;
+		printf("Enter name : ");
+		fflush(stdin);
+		scanf("%s",new->name);
+		printf("Enter surname : ");
+		scanf("%s",new->surname);
+		printf("Enter department : ");
+		scanf("%s",new->department);
+		printf("Enter faculty : ");
+		scanf("%s",new->faculty);
+		printf("Enter class : ");
+		scanf("%s",new->class);
+		printf("Enter gpa : ");
+		scanf("%f",&(new->gpa));
+		printf("Enter year : ");
+		scanf("%d",&(new->year));
 		new->studentPtr = NULL;
-		new->coursePtr = NULL;
-		printf("Enter name, surname, department, class, faculty, gpa, year information\n");
-		// gets(new->name);
-		// gets(new->surname);
-		// gets(new->department);
-		// gets(new->class);
-		// gets(new->faculty);
-		// scanf("%f",&new->gpa);
-		// scanf("%d",&new->year);
 	}
 
-    while( current != NULL && new->id > current->id ) {
-        previous = current;
-        current = current->studentPtr;
-    }
-    if( previous == NULL ) {
-        new->studentPtr = *cr;
-        *cr = new;
-		start = *cr;
-    }
-    else if(current->id != new->id) {
-        previous->studentPtr = new;
-        new->studentPtr = current;
-    }
-	printf("%s %d\n",__func__,__LINE__);
 
-	filePtr = fopen ("student_info.txt", "w+");
-    if (filePtr == NULL) {
-        fprintf(stderr, "\nCouldn't Open File'\n");
-        exit (1);
-    }
-	printf("%s %d\n",__func__,__LINE__);
-    
-    while(start != NULL) {
-        fwrite(start, sizeof(studentPtr), 1, filePtr);
-        start = start->studentPtr;
-    }
-    
-    if(fwrite != 0) {
-        printf("Linked List stored in the file successfully\n");
-    } else {
-           printf("Error While Writing\n");
-    }
-    fclose(filePtr);
+	while(current != NULL && new->id > current->id) {
+		temp = current;
+		previous = current;
+		current = current->studentPtr;
+	}
+	if( previous == NULL ) {
+		new->studentPtr = *cr;
+		*cr = new;
+		temp = *cr;
+	}
+	else if(new->id != current->id)	{
+		previous->studentPtr = new;
+		new->studentPtr = current;
+	}
 
+	filePtr = fopen("student_info.txt","a");
+	if(filePtr == NULL) {
+		printf("Error! Couldn't open file");
+	}
+	else {
+		while(temp != NULL) {
+			printf("%s %d\n",__func__,__LINE__);
+			fprintf( filePtr, "%d\t%s\t%s\t%s\t%s\t%s\t%f\t%d\n",
+					temp->id, temp->name, temp->surname, temp->department, 
+					temp->class, temp->faculty, temp->gpa, temp->year );
+			temp = temp->studentPtr;
+		}
+	}
+	fclose(filePtr);
 }
 
 void deleteStudent(FILE* filePtr, studentPtr* cr, int id)
 {
+	studentPtr temp;
+	studentPtr current = *cr;
+	studentPtr previous = NULL;
+
+	while(current != NULL && id > current->id) {
+		previous = current;
+		current = current->studentPtr;
+	}
+	
 	
 }
-// void insertCourse(coursePtr* cr, coursePtr* inscr, char* code)
-// {
-// 	coursePtr new;
-// 	coursePtr previous = NULL;
-// 	coursePtr current = cr;
+void insertCourse(coursePtr* cr, coursePtr* inscr, char* code)
+{
+	coursePtr new;
+	coursePtr previous = NULL;
+	coursePtr current = *cr;
 
-// 	new = malloc(sizeof(coursePtr));
-// 	if(new != NULL) {
-// 		new = inscr;
-// 	}
-
-// }
+	new = malloc(sizeof(course));
+	if(new != NULL) {
+		new = *inscr;
+	}
+	while(current != NULL && strcmp(new->code,code) > 0) {
+		previous = current;
+		current = current->coursePtr;
+	}
+	if(previous == NULL) {
+		new->coursePtr = *cr;
+		*cr = new;
+	}
+	else if(strcmp(new->code, code) != 0) {
+		previous->coursePtr = new;
+		new->coursePtr = current;
+	}
+}
